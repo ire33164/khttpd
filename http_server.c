@@ -12,13 +12,13 @@
 #define HTTP_RESPONSE_200_DUMMY                               \
     ""                                                        \
     "HTTP/1.1 200 OK" CRLF "Server: " KBUILD_MODNAME CRLF     \
-    "Content-Type: text/plain" CRLF "Content-Length: 12" CRLF \
-    "Connection: Close" CRLF CRLF "Hello World!" CRLF
+    "Content-Type: text/plain" CRLF "Content-Length: %d" CRLF \
+    "Connection: Close" CRLF CRLF "%s" CRLF
 #define HTTP_RESPONSE_200_KEEPALIVE_DUMMY                     \
     ""                                                        \
     "HTTP/1.1 200 OK" CRLF "Server: " KBUILD_MODNAME CRLF     \
-    "Content-Type: text/plain" CRLF "Content-Length: 12" CRLF \
-    "Connection: Keep-Alive" CRLF CRLF "Hello World!" CRLF
+    "Content-Type: text/plain" CRLF "Content-Length: %d" CRLF \
+    "Connection: Keep-Alive" CRLF CRLF "%s" CRLF
 #define HTTP_RESPONSE_501                                              \
     ""                                                                 \
     "HTTP/1.1 501 Not Implemented" CRLF "Server: " KBUILD_MODNAME CRLF \
@@ -73,6 +73,34 @@ static int http_server_send(struct socket *sock, const char *buf, size_t size)
     return done;
 }
 
+static char *http_get_parse_url(struct http_request *request, int keep_alive)
+{
+    const char *delim = "/";
+    char *token, *cur = request->request_url;
+    char *kbuf;
+    char *response = keep_alive ? HTTP_RESPONSE_200_KEEPALIVE_DUMMY
+                                : HTTP_RESPONSE_200_DUMMY;
+
+    int len = MAX_DIGIT + strlen(response) - 4 + 1;
+    kbuf = kmalloc(len, GFP_KERNEL);
+
+    cur++;
+    token = strsep(&cur, delim);
+    if (strcmp(token, "fib") == 0) {
+        // evalue fib(N)
+        long N;
+        char fib_result[MAX_DIGIT];
+        kstrtol(strsep(&cur, delim), 10, &N);
+        bignum fib_val = fib_eval(N);
+        bignum2str(&fib_val, fib_result);
+        snprintf(kbuf, len, response, strlen(fib_result), fib_result);
+        return kbuf;
+    }
+    snprintf(kbuf, strlen(response) - 3, response, 12, "Hello World!");
+    return kbuf;
+}
+
+
 static int http_server_response(struct http_request *request, int keep_alive)
 {
     char *response;
@@ -81,8 +109,8 @@ static int http_server_response(struct http_request *request, int keep_alive)
     if (request->method != HTTP_GET)
         response = keep_alive ? HTTP_RESPONSE_501_KEEPALIVE : HTTP_RESPONSE_501;
     else
-        response = keep_alive ? HTTP_RESPONSE_200_KEEPALIVE_DUMMY
-                              : HTTP_RESPONSE_200_DUMMY;
+        response = http_get_parse_url(request, keep_alive);
+
     http_server_send(request->socket, response, strlen(response));
     return 0;
 }
