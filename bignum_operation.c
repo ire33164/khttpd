@@ -81,9 +81,11 @@ void bignum2str(bignum *bn, char *dest)
     for (i = valid_part - 1; i >= 0; --i) {
         int zeros = zero_num(bn->part[i]);
         for (k = 0; k < zeros; ++k) {
-            snprintf(dest, MAX_DIGIT, "%s0", dest);
+            strcat(dest, "0");
         }
-        snprintf(dest, MAX_DIGIT, "%s%lld", dest, bn->part[i]);
+        char num[10];
+        snprintf(num, 10, "%lld", bn->part[i]);
+        strcat(dest, num);
     }
 }
 

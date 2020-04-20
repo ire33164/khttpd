@@ -1,5 +1,8 @@
 KDIR=/lib/modules/$(shell uname -r)/build
 
+PORT = 8081
+N = 300
+
 CFLAGS_user = -std=gnu11 -Wall -Wextra -Werror
 LDFLAGS_user = -lpthread
 
@@ -23,6 +26,9 @@ htstress: htstress.c
 
 check: all
 	@scripts/test.sh
+
+verify:
+	python3 ./fib_verify.py ${PORT} ${N}
 
 clean:
 	make -C $(KDIR) M=$(PWD) clean

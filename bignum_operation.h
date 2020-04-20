@@ -7,7 +7,7 @@
 #define MAX_DIGIT 65
 
 typedef struct {
-    unsigned long long part[PART_NUM];
+    long long part[PART_NUM];
 } bignum;
 
 void bignum_add(bignum *a, bignum *b, bignum *result);
